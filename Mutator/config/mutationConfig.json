@@ -1,0 +1,19 @@
+{
+  "Configs": [
+    {
+      "name": "myTreeConfig",
+      "algo": "tree",
+      "max_iteration": 3
+    },
+    {
+      "name": "myLeafConfig",
+      "algo": "leaf",
+      "max_iteration": 2
+    },
+    {
+      "name": "myPositionConfig",
+      "algo": "position",
+      "max_iteration": 100
+    }
+  ]
+}

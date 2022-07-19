@@ -1,0 +1,14 @@
+Proof-of-Concept:
+
+1. Build a xml parser from ANTLR.
+2. Get an AST from one single file.
+3. Write & Test leaf mutator version 0.1.
+4. Write & Test tree mutator version 0.1.
+5. Write & Test generator version 0.1.
+6. Write & Test CLI version 0.1.
+7. Run e2e tests.
+
+Consider success:
+1. The generator can generate xml files passing the semantic check of xmlsec
+   with a success rate above ???
+2. Mutator with success rate above ???
