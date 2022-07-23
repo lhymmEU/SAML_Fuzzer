@@ -10,13 +10,13 @@ import  "golang.org/x/exp/slices"
 
 // The parser object
 
-type antlrParser struct {
+type MyAntlrParser struct {
 	name string
 	Listener *MyListener
 }
 
-func NewAntlrParser(name string) *antlrParser {
-	return &antlrParser{
+func NewAntlrParser(name string) *MyAntlrParser {
+	return &MyAntlrParser{
 		name:     name,
 		Listener: NewMyListener(),
 	}
@@ -29,7 +29,11 @@ func NewAntlrParser(name string) *antlrParser {
 Our own parse tree listener implementation
  */
 
-// Define the type
+/*
+	Define the type.
+	A listener should only contain the basic parsed information.
+	Any interpretation or post-processed info should not be presented in this struct.
+*/
 
 type MyListener struct {
 	*parser.BaseXMLParserListener
@@ -93,9 +97,9 @@ func (ml *MyListener) EnterChardata(ctx *parser.ChardataContext) {
 		["start1-end1", "start2-end2"]
  */
 
-func (ap *antlrParser) Parse() {
+func (ap *MyAntlrParser) Parse(seed string) {
 
-	input, _ := antlr.NewFileStream("/Users/lhymm/xmlsignaturefuzzing/xmlMutator/cmd/mutator/input.xml")
+	input, _ := antlr.NewFileStream(seed)
 	lexer := parser.NewXMLLexer(input)
 	stream := antlr.NewCommonTokenStream(lexer, 0)
 	p := parser.NewXMLParser(stream)

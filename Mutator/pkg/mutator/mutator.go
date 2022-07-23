@@ -37,6 +37,7 @@ type mutator struct {
 	name string
 	config *MutationConfig
 	mp *mutationPool
+	positionMap []position
 }
 
 func Init(name string, configPath string, configName string) *mutator {
@@ -72,9 +73,9 @@ func (m *mutator) Mutate(ml *parser.MyListener) {
 	case "leaf":
 		//leafMutation()
 	case "position":
-		s = m.positionMutation(ml)
+		m.positionMutation()
 	default:
-		s = m.positionMutation(ml)
+		m.positionMutation()
 	}
 
 	// This part is to solve the issue of <Nameid="123">
@@ -160,32 +161,156 @@ func (m *mutator) leafMutation(ml *parser.MyListener) {
 }
 
 /*
-	Implementation of position mutation algorithm
-	The algorithm works in following steps:
-		1) identify the protected part, in the case of xml signature, the signed element S ✅
-		2) build a payload P according to pre-coded rules ✅
-		3) fuzz the relative position of S and P
+	Below is the core logic of position mutation
+	====================================================================================================================================================
  */
 
-func (m *mutator) positionMutation(ml *parser.MyListener) string {
-	subTrees := ml.SubTrees
-	protected := identifyProtected(subTrees, "id=\"a1\"")
-	fmt.Println("Protected part is: ", protected)
-	payload := buildPayload(protected)
-	fmt.Println("Payload is: ", payload)
+const PreProcessTime = 10 // This constant is used to define how many times should we mutate to gather results for statistical analysis before doing the actual fuzzing.
+const TickerTime = 60 // This constant defines how long should we wait between two statistical analysis.
+const MultiGen = 10 // This constant defines how many mutated files should we generate from one single initial seed.
 
-	// 1. find all feasible positions (the function will remove the original protected part first)
-	positions := identifyPositions(ml)
-	positions = positions[:len(positions)-1]
-	// 2. build a scoreboard
-	// TODO: finish this
-	// 3. insert original protected part and payload into random positions
-	s := insert(protected, payload, positions, ml)
+type statisticalTable struct {
 
-	return s
 }
 
-func identifyProtected(subTrees []string, protected string) string {
+type statisticalResults struct {
+
+}
+
+type position struct {
+	depth, width   int
+	insertionPoint int
+}
+
+type relativePosition struct {
+
+}
+
+// This type is used to store the result from a hot run
+
+type hotResult struct {
+
+}
+
+func (m *mutator) positionMutation() error {
+	// Pre-process to generate the statistical table
+	initialSeeds := fetchSeeds("initial")
+	times := 0
+	for _, seed := range initialSeeds {
+		for times < PreProcessTime {
+			if m.mutationPhase1(seed, MultiGen) {
+				m.mutationPhase2(fetchSeeds("phaseTwo"))
+			} else {
+				continue
+			}
+			times++
+		}
+	}
+
+	// Set up the ticker & do statistical analysis periodically
+	ticker := time.NewTicker(TickerTime)
+	done := make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case <- done:
+				return
+			case <- ticker.C:
+				table := m.readTable()
+				statResults := m.analyzeTable(table)
+				m.writeAnalysis(statResults)
+				m.scheduleSeeds(statResults)
+			}
+		}
+	}()
+
+	// The actual fuzzing stage
+	seed := m.readNextSeed()
+	for seed != "" {
+		if m.mutationPhase1(seed, MultiGen) {
+			m.mutationPhase2(fetchSeeds("phaseTwo"))
+		} else {
+			continue
+		}
+		seed = m.readNextSeed()
+	}
+
+	return nil
+}
+
+// This function handles the position mutation part
+
+func (m *mutator) mutationPhase1(seed string, fileNum int) bool {
+	// Get the position map from modified ANTLR4 parser
+	mutationParser := parser.NewAntlrParser("experiment")
+	mutationParser.Parse(seed)
+	m.positionMap = m.identifyPositions(mutationParser.Listener)
+
+	// Extract protected information
+	// TODO: Need modification to the function
+	protected := m.extractProtected(mutationParser.Listener.SubTrees, "")
+
+	// Generate payload from the extracted information
+	payload := m.buildPayload(protected)
+	// TODO: Need to modify the "positionMutate" function
+	for i := 0; i < fileNum; i++ {
+		mutatedSeed, scP, pP := m.positionMutate(protected, payload, mutationParser.Listener)
+		result := m.validityCheck(mutatedSeed)
+		relativeP := m.calculateRelative(scP, pP)
+		m.writeTable(relativeP, result, "phaseOne")
+		m.writeMutatedSeed(mutatedSeed, "phaseOne")
+	}
+
+
+
+	return false
+}
+
+// This function handles the random mutation part
+
+func (m *mutator) mutationPhase2(seeds []string) error {
+
+	for _, seed := range seeds {
+		mutatedSeed := m.randomMutate(seed)
+		validityResult := m.validityCheck(mutatedSeed)
+		hotR := m.deliverToTarget(seed, mutatedSeed)
+		m.writeTable(hotR, validityResult, "phaseTwo")
+		m.writeMutatedSeed(mutatedSeed, "phaseTwo")
+	}
+
+	return nil
+}
+
+func fetchSeeds(phase string) []string {
+
+	return []string{}
+}
+
+func (m *mutator) readTable() *statisticalTable {
+
+	return new(statisticalTable)
+}
+
+func (m *mutator) analyzeTable(table *statisticalTable) *statisticalResults {
+
+	return new(statisticalResults)
+}
+
+func (m *mutator) writeAnalysis(results *statisticalResults) {
+
+}
+
+func (m *mutator) scheduleSeeds(schedule *statisticalResults) {
+
+}
+
+func (m *mutator) readNextSeed() string {
+
+	return ""
+}
+
+func (m *mutator) extractProtected(subTrees []string, protected string) string {
 	var s string
 
 	r, _ := regexp.Compile(protected)
@@ -204,7 +329,7 @@ func identifyProtected(subTrees []string, protected string) string {
 
 // This function is problem-specific, it depends on what vulnerability the user is targeting.
 
-func buildPayload(protected string) string {
+func (m *mutator) buildPayload(protected string) string {
 	var payload string
 
 	// For XSW attack - change the id and the content value of the protected part.
@@ -222,11 +347,6 @@ func buildPayload(protected string) string {
 	return payload
 }
 
-type position struct {
-	depth, width   int
-	insertionPoint int
-}
-
 /*
 	The algorithm is designed according to the behavior of Antlr 4.
 	The algorithm is:
@@ -235,7 +355,7 @@ type position struct {
 		3. see "<..../>": 1) mark depth:++width
  */
 
-func identifyPositions(ml *parser.MyListener) []position {
+func (m *mutator) identifyPositions(ml *parser.MyListener) []position {
 	var memory []string
 	var positions []position
 	positionTracker := make(map[int]int)
@@ -295,23 +415,57 @@ func buildScoreBoard(positions []position) {
 
 }
 
-func insert(protected string, payload string, positions []position, ml *parser.MyListener) string {
+func (m *mutator) positionMutate(protected string, payload string, ml *parser.MyListener) (string, position, position) {
 	terminals := ml.Terminals
 	var iProtected, iPayload int
 	// TODO: after a scoreboard is available, the insertion should be carried out according to the score board
 	rand.Seed(time.Now().UnixNano())
 	for {
-		iProtected = rand.Intn(len(positions))
-		iPayload = rand.Intn(len(positions))
+		iProtected = rand.Intn(len(m.positionMap))
+		iPayload = rand.Intn(len(m.positionMap))
 		if iProtected != iPayload {
 			break
 		}
 	}
-	x := positions[iProtected].insertionPoint
-	y := positions[iPayload].insertionPoint
+	x := m.positionMap[iProtected].insertionPoint
+	y := m.positionMap[iPayload].insertionPoint
 	if x < y {
-		return strings.Join(terminals[:x+1], "") + protected + strings.Join(terminals[x+1:y+1], "") + payload + strings.Join(terminals[y+1:], "")
+		return strings.Join(terminals[:x+1], "") + protected + strings.Join(terminals[x+1:y+1], "") + payload + strings.Join(terminals[y+1:], ""), position{}, position{}
 	} else {
-		return strings.Join(terminals[:y+1], "") + payload + strings.Join(terminals[y+1:x+1], "") + protected + strings.Join(terminals[x+1:], "")
+		return strings.Join(terminals[:y+1], "") + payload + strings.Join(terminals[y+1:x+1], "") + protected + strings.Join(terminals[x+1:], ""), position{}, position{}
 	}
 }
+
+func (m *mutator) validityCheck(mutatedSeed string) bool {
+
+	return false
+}
+
+func (m *mutator) calculateRelative(scP position, pP position) relativePosition {
+
+	return relativePosition{}
+}
+
+func (m *mutator) writeTable(relativeP interface{}, result interface{}, phase string) {
+
+
+}
+
+func (m *mutator) writeMutatedSeed(mutatedSeed string, phase string) {
+
+}
+
+func (m *mutator) randomMutate(seed string) string {
+
+	return ""
+}
+
+func (m *mutator) deliverToTarget(originalSeed string, mutatedSeed string) hotResult {
+
+	return hotResult{}
+}
+
+/*
+	This is the end of position mutation logic
+	====================================================================================================================================================
+ */

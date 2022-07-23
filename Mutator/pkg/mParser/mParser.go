@@ -1,6 +1,9 @@
 package mParser
 
-import "fmt"
+import (
+	"fmt"
+	"xmlMutator/pkg/parser"
+)
 
 /*
 	For now, this package will do nothing,
@@ -8,6 +11,9 @@ import "fmt"
 	the changing process should be written here.
  */
 
-func Parse(myAntlrParser interface{}) {
-	fmt.Println("The ASTs have been parsed to suitable data formats... ;)")
+func Parse() *parser.MyAntlrParser {
+	myParser := parser.NewAntlrParser("experiment")
+	myParser.Parse()
+	fmt.Println("The input file has been parsed into a position-aware format.")
+	return myParser
 }
