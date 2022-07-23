@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -114,4 +115,13 @@ func ReadFileToString(name string, path string) (string, error) {
 		return "", err
 	}
 	return string(result), nil
+}
+
+func ReadFileFromDir(dirName string, walkFn filepath.WalkFunc) error {
+	err := filepath.Walk(dirName, walkFn)
+	if err != nil {
+		return err
+	} else {
+		return nil
+	}
 }

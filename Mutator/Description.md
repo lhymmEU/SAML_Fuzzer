@@ -170,3 +170,6 @@ type connector struct {
 	amount int // the amount to be sent to the AFL++
 }
 ```
+
+###Current Testing
+mutator.go -> mutationPhase1() -> NewAntlrParser()

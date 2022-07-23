@@ -3,6 +3,7 @@ package mutator
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -168,6 +169,8 @@ func (m *mutator) leafMutation(ml *parser.MyListener) {
 const PreProcessTime = 10 // This constant is used to define how many times should we mutate to gather results for statistical analysis before doing the actual fuzzing.
 const TickerTime = 60 // This constant defines how long should we wait between two statistical analysis.
 const MultiGen = 10 // This constant defines how many mutated files should we generate from one single initial seed.
+const InitialSeedsPath = "../../seeds/initial" // This is the relative path where the initial seeds are stored.
+const PhaseTwoSeedsPath = "../../seeds/phaseTwo" // This is the relative path where the seeds for phaseTwo are stored.
 
 type statisticalTable struct {
 
@@ -283,8 +286,32 @@ func (m *mutator) mutationPhase2(seeds []string) error {
 }
 
 func fetchSeeds(phase string) []string {
+	var seeds []string
 
-	return []string{}
+	switch phase {
+	case "initial":
+		helpers.ReadFileFromDir(InitialSeedsPath, func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				fmt.Println("Inside fetchSeeds(initial): ", err)
+				return err
+			}
+			content, _ := os.ReadFile(path)
+			seeds = append(seeds, string(content))
+			return nil
+		})
+	case "phaseTwo":
+		helpers.ReadFileFromDir(PhaseTwoSeedsPath, func(path string, info fs.FileInfo, err error) error {
+			if err != nil {
+				fmt.Println("Inside fetchSeeds(phaseTwo): ", err)
+				return err
+			}
+			content, _ := os.ReadFile(path)
+			seeds = append(seeds, string(content))
+			return nil
+		})
+	}
+	// This is due to an unknown issue that cause the generated slice always start with an empty file name
+	return seeds[1:]
 }
 
 func (m *mutator) readTable() *statisticalTable {
