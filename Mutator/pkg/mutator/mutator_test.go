@@ -3,15 +3,8 @@ package mutator
 import (
 	"fmt"
 	"testing"
+	"xmlMutator/pkg/parser"
 )
-
-/*func TestInit(t *testing.T) {
-	myMutator := Init("Mine", "/Users/lhymm/xmlsignaturefuzzing/xmlMutator/config/mutationConfig.json", "myTreeConfig")
-	fmt.Println("The name is: ", myMutator.config.Name)
-	fmt.Println("The configs are: ", myMutator.config.MaxIteration)
-	fmt.Println("The algo is: ", myMutator.config.Algo)
-	fmt.Println("The mutation pool is: ", myMutator.mp)
-}*/
 
 func TestInit(t *testing.T) {
 	fmt.Println("Start testing... Init()")
@@ -28,7 +21,7 @@ func TestInit(t *testing.T) {
 func TestFetchSeeds(t *testing.T) {
 	fmt.Println("Start testing... fetchSeeds()")
 
-	expectInitial := []string{"<name>This is initial doc 1</name>", "<name>This is initial doc 2</name>", "<name>This is initial doc 3</name>"}
+	expectInitial := []string{"../../seeds/initial/initial.xml", "../../seeds/initial/initial2.xml", "../../seeds/initial/initial3.xml"}
 	expectPhaseTwo := []string{"<name>This is phase two doc 1</name>", "<name>This is phase two doc 2</name>", "<name>This is phase two doc 3</name>"}
 
 	resultInitial := fetchSeeds("initial")
@@ -46,4 +39,17 @@ func TestFetchSeeds(t *testing.T) {
 	}
 
 	fmt.Println("End testing... fetchSeeds()!!!")
+}
+
+func TestIdentifyPositions(t *testing.T) {
+	fmt.Println("\nStart testing... identifyPositions()")
+	myMutator := Init("testIdentifyPositions", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+	myParser := parser.NewAntlrParser("testIdentifyPositions")
+	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
+
+	positions := myMutator.identifyPositions(myParser.Listener)
+	fmt.Println("terminals are: ", myParser.Listener.Terminals)
+	fmt.Println("positions are: ", positions)
+
+	fmt.Println("\nEnd testing... identifyPositions()")
 }

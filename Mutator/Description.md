@@ -172,4 +172,4 @@ type connector struct {
 ```
 
 ###Current Testing
-mutator.go -> mutationPhase1() -> NewAntlrParser()
+mutator.go -> mutationPhase1() -> identifyPositions()

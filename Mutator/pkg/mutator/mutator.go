@@ -34,14 +34,14 @@ type mutationPool struct {
 	mutatedSeeds []mSeeds
 }
 
-type mutator struct {
+type positionMutator struct {
 	name string
 	config *MutationConfig
 	mp *mutationPool
 	positionMap []position
 }
 
-func Init(name string, configPath string, configName string) *mutator {
+func Init(name string, configPath string, configName string) *positionMutator {
 	var config Configs
 	jsonFile, _ := os.Open(configPath)
 	defer jsonFile.Close()
@@ -53,7 +53,7 @@ func Init(name string, configPath string, configName string) *mutator {
 
 	for i, c := range config.Configs {
 		if c.Name == configName {
-			return &mutator{
+			return &positionMutator{
 				name:  	name,
 				config: &config.Configs[i],
 				mp:     new(mutationPool),
@@ -66,7 +66,7 @@ func Init(name string, configPath string, configName string) *mutator {
 	return nil
 }
 
-func (m *mutator) Mutate(ml *parser.MyListener) {
+func (m *positionMutator) Mutate(ml *parser.MyListener) {
 	var s string
 	switch m.config.Algo {
 	case "tree":
@@ -89,7 +89,7 @@ func (m *mutator) Mutate(ml *parser.MyListener) {
 
 // Implementation of tree mutation algorithm
 
-func (m *mutator) treeMutation(ml *parser.MyListener) string {
+func (m *positionMutator) treeMutation(ml *parser.MyListener) string {
 	subTrees := ml.SubTrees
 	// the last string in a sub-tree slice is the file itself.
 	xmlString := subTrees[len(subTrees)-1]
@@ -144,7 +144,7 @@ func subTreeIdentify(xmlString string, subTree string) (int, int) {
 // Implementation of leaf mutation algorithm
 // TODO: finish this after finishing position mutation algorithm.
 
-func (m *mutator) leafMutation(ml *parser.MyListener) {
+func (m *positionMutator) leafMutation(ml *parser.MyListener) {
 	//attr := ml.Attr
 	//contents := ml.Contents
 	//tags := ml.TagNames
@@ -195,7 +195,7 @@ type hotResult struct {
 
 }
 
-func (m *mutator) positionMutation() error {
+func (m *positionMutator) positionMutation() error {
 	// Pre-process to generate the statistical table
 	initialSeeds := fetchSeeds("initial")
 	times := 0
@@ -244,9 +244,9 @@ func (m *mutator) positionMutation() error {
 
 // This function handles the position mutation part
 
-func (m *mutator) mutationPhase1(seed string, fileNum int) bool {
+func (m *positionMutator) mutationPhase1(seed string, fileNum int) bool {
 	// Get the position map from modified ANTLR4 parser
-	mutationParser := parser.NewAntlrParser("experiment")
+	mutationParser := parser.NewAntlrParser("positionMutator")
 	mutationParser.Parse(seed)
 	m.positionMap = m.identifyPositions(mutationParser.Listener)
 
@@ -272,7 +272,7 @@ func (m *mutator) mutationPhase1(seed string, fileNum int) bool {
 
 // This function handles the random mutation part
 
-func (m *mutator) mutationPhase2(seeds []string) error {
+func (m *positionMutator) mutationPhase2(seeds []string) error {
 
 	for _, seed := range seeds {
 		mutatedSeed := m.randomMutate(seed)
@@ -285,6 +285,10 @@ func (m *mutator) mutationPhase2(seeds []string) error {
 	return nil
 }
 
+/*
+	fetchSeeds() should return only the names in "initial" phase to be compatible with parser.Parse()
+ */
+
 func fetchSeeds(phase string) []string {
 	var seeds []string
 
@@ -295,8 +299,7 @@ func fetchSeeds(phase string) []string {
 				fmt.Println("Inside fetchSeeds(initial): ", err)
 				return err
 			}
-			content, _ := os.ReadFile(path)
-			seeds = append(seeds, string(content))
+			seeds = append(seeds, path)
 			return nil
 		})
 	case "phaseTwo":
@@ -314,30 +317,30 @@ func fetchSeeds(phase string) []string {
 	return seeds[1:]
 }
 
-func (m *mutator) readTable() *statisticalTable {
+func (m *positionMutator) readTable() *statisticalTable {
 
 	return new(statisticalTable)
 }
 
-func (m *mutator) analyzeTable(table *statisticalTable) *statisticalResults {
+func (m *positionMutator) analyzeTable(table *statisticalTable) *statisticalResults {
 
 	return new(statisticalResults)
 }
 
-func (m *mutator) writeAnalysis(results *statisticalResults) {
+func (m *positionMutator) writeAnalysis(results *statisticalResults) {
 
 }
 
-func (m *mutator) scheduleSeeds(schedule *statisticalResults) {
+func (m *positionMutator) scheduleSeeds(schedule *statisticalResults) {
 
 }
 
-func (m *mutator) readNextSeed() string {
+func (m *positionMutator) readNextSeed() string {
 
 	return ""
 }
 
-func (m *mutator) extractProtected(subTrees []string, protected string) string {
+func (m *positionMutator) extractProtected(subTrees []string, protected string) string {
 	var s string
 
 	r, _ := regexp.Compile(protected)
@@ -356,7 +359,7 @@ func (m *mutator) extractProtected(subTrees []string, protected string) string {
 
 // This function is problem-specific, it depends on what vulnerability the user is targeting.
 
-func (m *mutator) buildPayload(protected string) string {
+func (m *positionMutator) buildPayload(protected string) string {
 	var payload string
 
 	// For XSW attack - change the id and the content value of the protected part.
@@ -382,7 +385,7 @@ func (m *mutator) buildPayload(protected string) string {
 		3. see "<..../>": 1) mark depth:++width
  */
 
-func (m *mutator) identifyPositions(ml *parser.MyListener) []position {
+func (m *positionMutator) identifyPositions(ml *parser.MyListener) []position {
 	var memory []string
 	var positions []position
 	positionTracker := make(map[int]int)
@@ -390,16 +393,20 @@ func (m *mutator) identifyPositions(ml *parser.MyListener) []position {
 
 
 	depth := -1
-	fileSlice := ml.Terminals
-	for i, v := range fileSlice {
-		if v == "<" || v == "/" {
+	terminals := ml.Terminals
+	for i, v := range terminals {
+
+		switch v {
+		case "<":
+			fallthrough
+		case "/":
 			memory = append(memory, v)
-		} else if v == ">" {
+		case ">":
 			if strings.Join(memory, "") == "<" {
 				depth++
 				// check if we've already visited this depth before
 				if _, ok := positionTracker[depth]; ok {
-					width = positionTracker[depth]+1
+					width = positionTracker[depth] + 1
 					positionTracker[depth]++
 				} else {
 					width = 0
@@ -413,24 +420,25 @@ func (m *mutator) identifyPositions(ml *parser.MyListener) []position {
 				memory = []string{""}
 			} else if strings.Join(memory, "") == "</" {
 				depth--
+				if depth < 0  { break }
+
 				positions = append(positions, position{
 					depth:          depth,
-					width:          positionTracker[depth]+1,
+					width:          positionTracker[depth] + 1,
 					insertionPoint: i,
 				})
 				positionTracker[depth]++
 				memory = []string{""}
 			}
-		} else if v == "/>" {
+		case "/>":
 			positions = append(positions, position{
 				depth:          depth,
-				width:          positionTracker[depth]+1,
+				width:          positionTracker[depth] + 1,
 				insertionPoint: i,
 			})
 			positionTracker[depth]++
 			memory = []string{""}
 		}
-
 	}
 
 	return positions
@@ -442,7 +450,7 @@ func buildScoreBoard(positions []position) {
 
 }
 
-func (m *mutator) positionMutate(protected string, payload string, ml *parser.MyListener) (string, position, position) {
+func (m *positionMutator) positionMutate(protected string, payload string, ml *parser.MyListener) (string, position, position) {
 	terminals := ml.Terminals
 	var iProtected, iPayload int
 	// TODO: after a scoreboard is available, the insertion should be carried out according to the score board
@@ -463,31 +471,31 @@ func (m *mutator) positionMutate(protected string, payload string, ml *parser.My
 	}
 }
 
-func (m *mutator) validityCheck(mutatedSeed string) bool {
+func (m *positionMutator) validityCheck(mutatedSeed string) bool {
 
 	return false
 }
 
-func (m *mutator) calculateRelative(scP position, pP position) relativePosition {
+func (m *positionMutator) calculateRelative(scP position, pP position) relativePosition {
 
 	return relativePosition{}
 }
 
-func (m *mutator) writeTable(relativeP interface{}, result interface{}, phase string) {
+func (m *positionMutator) writeTable(relativeP interface{}, result interface{}, phase string) {
 
 
 }
 
-func (m *mutator) writeMutatedSeed(mutatedSeed string, phase string) {
+func (m *positionMutator) writeMutatedSeed(mutatedSeed string, phase string) {
 
 }
 
-func (m *mutator) randomMutate(seed string) string {
+func (m *positionMutator) randomMutate(seed string) string {
 
 	return ""
 }
 
-func (m *mutator) deliverToTarget(originalSeed string, mutatedSeed string) hotResult {
+func (m *positionMutator) deliverToTarget(originalSeed string, mutatedSeed string) hotResult {
 
 	return hotResult{}
 }
