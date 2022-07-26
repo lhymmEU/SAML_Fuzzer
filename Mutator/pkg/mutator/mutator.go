@@ -172,6 +172,7 @@ const MultiGen = 10 // This constant defines how many mutated files should we ge
 const InitialSeedsPath = "../../seeds/initial" // This is the relative path where the initial seeds are stored.
 const PhaseTwoSeedsPath = "../../seeds/phaseTwo" // This is the relative path where the seeds for phaseTwo are stored.
 const SignatureReference = "<ds:ReferenceURI=" // This is used by extractProtected() to identify the URI of the protected content.
+const PayloadId = "ID=\"attack\"" // This is used by buildPayload() to uniquely identify our self-built payload.
 
 type statisticalTable struct {
 
@@ -252,11 +253,10 @@ func (m *positionMutator) mutationPhase1(seed string, fileNum int) bool {
 	m.positionMap = m.identifyPositions(mutationParser.Listener)
 
 	// Extract protected information
-	// TODO: Need modification to the function
-	protected := m.extractProtected(mutationParser.Listener.SubTrees)
+	protected, protectedID := m.extractProtected(mutationParser.Listener.SubTrees)
 
 	// Generate payload from the extracted information
-	payload := m.buildPayload(protected)
+	payload := m.buildPayload(protected, protectedID)
 	// TODO: Need to modify the "positionMutate" function
 	for i := 0; i < fileNum; i++ {
 		mutatedSeed, scP, pP := m.positionMutate(protected, payload, mutationParser.Listener)
@@ -348,7 +348,7 @@ func (m *positionMutator) readNextSeed() string {
 		3. use the value extracted to find the sub-tree in which contains it and return the sub-tree ✅
  */
 
-func (m *positionMutator) extractProtected(subTrees []string) string {
+func (m *positionMutator) extractProtected(subTrees []string) (string, string) {
 	var protected string
 
 	// Step 1
@@ -376,35 +376,34 @@ func (m *positionMutator) extractProtected(subTrees []string) string {
 
 	// Step 3
 	// TODO: now this part of code assumes the protected content always has an attribute in the form of 'ID="protected"', need to relax this assumption
-	tmp := "ID=\"" + protected[startIndex:endIndex+1]
-	protectedTree, _ := regexp.Compile(tmp)
+	protectedID := "ID=\"" + protected[startIndex:endIndex+1] + "\""
+	protectedTree, _ := regexp.Compile(protectedID)
 	for i, v := range subTrees {
 		if protectedTree.MatchString(v) {
 			protected = subTrees[i]
-			fmt.Println("Found one !!!!!!!!!")
 			break
 		}
 	}
 
-	return protected
+	return protected, protectedID
 }
 
-// This function is problem-specific, it depends on what vulnerability the user is targeting.
+/*
+	This function works as follows:
+		1. change the ID portion from the protected code to a pre-defined value ✅
+		2. return the generated ID-changed payload ✅
+ */
 
-func (m *positionMutator) buildPayload(protected string) string {
+func (m *positionMutator) buildPayload(protected string, protectedID string) string {
 	var payload string
 
-	// For XSW attack - change the id and the content value of the protected part.
-	newId := "id=\"attack\""
-	newContent := "payload"
+	newId := PayloadId
 	// generate payload
-	r1, _ := regexp.Compile("id=\"([a-z]+[0-9])\"")
+	r1, _ := regexp.Compile(protectedID)
 	index := r1.FindStringSubmatchIndex(protected)
+	fmt.Println("The index is: ", index)
+	fmt.Println("The length of protected is: ", len(protected))
 	payload = protected[:index[0]] + newId + protected[index[1]:]
-	// replace original content
-	r2, _ := regexp.Compile(">.<")
-	contentIndex := r2.FindStringSubmatchIndex(payload)
-	payload = payload[:contentIndex[0]+1] + newContent + payload[contentIndex[1]-1:]
 
 	return payload
 }

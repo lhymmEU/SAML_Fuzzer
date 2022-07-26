@@ -56,13 +56,28 @@ func TestIdentifyPositions(t *testing.T) {
 
 func TestExtractProtected(t *testing.T) {
 	fmt.Println("\nStart testing... extractProtected()")
-	myMutator := Init("testIdentifyPositions", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+	myMutator := Init("testExtractProtected", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
 	myParser := parser.NewAntlrParser("testIdentifyPositions")
 	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
 
 	fmt.Println("Subtrees are: ", myParser.Listener.SubTrees)
-	result := myMutator.extractProtected(myParser.Listener.SubTrees)
+	result, protectedID := myMutator.extractProtected(myParser.Listener.SubTrees)
 	fmt.Println("The extracted part is: ", result)
+	fmt.Println("The protected id is: ", protectedID)
 
 	fmt.Println("\nEnd testing... extractProtected()")
+}
+
+func TestBuildPayload(t *testing.T) {
+	fmt.Println("\nStart testing... buildPayload()")
+	myMutator := Init("testBuildPayload", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+
+	expected := "<nameID=\"attack\"><justFun/><ds:ReferenceURI=\"protected\">Content of ds:Reference here</ds:Reference>This is initial doc 1</name>"
+	result := myMutator.buildPayload("<nameID=\"protected\"><justFun/><ds:ReferenceURI=\"protected\">Content of ds:Reference here</ds:Reference>This is initial doc 1</name>", "ID=\"protected\"")
+	if result != expected {
+		t.Fatalf("Testing failed -- buildPayload()")
+	}
+	fmt.Println("The payload built is: ", result)
+
+	fmt.Println("\nEnd testing... buildPayload()")
 }
