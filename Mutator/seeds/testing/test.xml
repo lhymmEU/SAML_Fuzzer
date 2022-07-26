@@ -1,1 +1,1 @@
-<Test><name><justFun />This is initial doc 1</name></Test>
+<Test><name ID="protected"><justFun /><ds:Reference URI="protected">Content of ds:Reference here</ds:Reference>This is initial doc 1</name></Test>

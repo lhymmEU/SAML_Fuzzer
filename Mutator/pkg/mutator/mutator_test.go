@@ -53,3 +53,16 @@ func TestIdentifyPositions(t *testing.T) {
 
 	fmt.Println("\nEnd testing... identifyPositions()")
 }
+
+func TestExtractProtected(t *testing.T) {
+	fmt.Println("\nStart testing... extractProtected()")
+	myMutator := Init("testIdentifyPositions", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+	myParser := parser.NewAntlrParser("testIdentifyPositions")
+	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
+
+	fmt.Println("Subtrees are: ", myParser.Listener.SubTrees)
+	result := myMutator.extractProtected(myParser.Listener.SubTrees)
+	fmt.Println("The extracted part is: ", result)
+
+	fmt.Println("\nEnd testing... extractProtected()")
+}

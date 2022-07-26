@@ -171,6 +171,7 @@ const TickerTime = 60 // This constant defines how long should we wait between t
 const MultiGen = 10 // This constant defines how many mutated files should we generate from one single initial seed.
 const InitialSeedsPath = "../../seeds/initial" // This is the relative path where the initial seeds are stored.
 const PhaseTwoSeedsPath = "../../seeds/phaseTwo" // This is the relative path where the seeds for phaseTwo are stored.
+const SignatureReference = "<ds:ReferenceURI=" // This is used by extractProtected() to identify the URI of the protected content.
 
 type statisticalTable struct {
 
@@ -252,7 +253,7 @@ func (m *positionMutator) mutationPhase1(seed string, fileNum int) bool {
 
 	// Extract protected information
 	// TODO: Need modification to the function
-	protected := m.extractProtected(mutationParser.Listener.SubTrees, "")
+	protected := m.extractProtected(mutationParser.Listener.SubTrees)
 
 	// Generate payload from the extracted information
 	payload := m.buildPayload(protected)
@@ -340,21 +341,52 @@ func (m *positionMutator) readNextSeed() string {
 	return ""
 }
 
-func (m *positionMutator) extractProtected(subTrees []string, protected string) string {
-	var s string
+/*
+	This function works as follows:
+		1. find the sub-tree contains <ds:Reference> tag ✅
+		2. extract URI value ✅
+		3. use the value extracted to find the sub-tree in which contains it and return the sub-tree ✅
+ */
 
-	r, _ := regexp.Compile(protected)
+func (m *positionMutator) extractProtected(subTrees []string) string {
+	var protected string
+
+	// Step 1
+	signatureRefTree, _ := regexp.Compile(SignatureReference)
 	for i, v := range subTrees {
 		// this assumes the regular expression provided by the function caller can uniquely identify the protected part.
 		// also, it makes sense to stop at the first match from the subTrees array, because antlr process the doc in
 		// a DFS manner, so the first matched string will be the smallest subtree that contains the protected part.
-		if r.MatchString(v) {
-			s = subTrees[i]
+		if signatureRefTree.MatchString(v) {
+			protected = subTrees[i]
 			break
 		}
 	}
 
-	return s
+	// Step 2
+	// TODO: now this extraction mechanism assumes too much of the target file, need to relax the assumption in the next version.
+	startIndex := 18 // the length of '<ds:ReferenceURI="'
+	endIndex := -1
+	for i, c := range protected {
+		if string(c) == ">" {
+			endIndex = i - 2
+			break
+		}
+	}
+
+	// Step 3
+	// TODO: now this part of code assumes the protected content always has an attribute in the form of 'ID="protected"', need to relax this assumption
+	tmp := "ID=\"" + protected[startIndex:endIndex+1]
+	protectedTree, _ := regexp.Compile(tmp)
+	for i, v := range subTrees {
+		if protectedTree.MatchString(v) {
+			protected = subTrees[i]
+			fmt.Println("Found one !!!!!!!!!")
+			break
+		}
+	}
+
+	return protected
 }
 
 // This function is problem-specific, it depends on what vulnerability the user is targeting.
