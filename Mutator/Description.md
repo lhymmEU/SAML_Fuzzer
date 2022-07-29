@@ -1,8 +1,8 @@
-#Position Mutator - for XML
-##The structure after a complete OOP refactor
+# Position Mutator - for XML
+## The structure after a complete OOP refactor
 ![](pics/PositionMutatorOOP.png)
-##Object Details
-###seedPool ✅
+## Object Details
+### seedPool ✅
 1. Description:\
    This object will handle the storage of input seeds.\
    The seeds don't need to be downloaded into  local storage,\
@@ -38,7 +38,7 @@ type seedPool struct {
 	seeds []seed
 }
 ```
-###antlrParser ✅
+### antlrParser ✅
 1. Description:\
    This object will parse an input seed into an AST, then extracted relevant information\
    from the AST according to the chosen mutation algorithm. The extracted information will\
@@ -64,7 +64,7 @@ type MyListener struct {
    Attr map[string][]string
 }
 ```
-###MParser ⌛️
+### MParser ⌛️
 1. Description:\
    This object will parse the outputs of the antlrParser to a suitable format for the\
    mutator to use according to the chosen mutation algorithm.
@@ -83,7 +83,7 @@ type mParser struct {
 	parsedFiles []mParsed
 }
 ```
-###Mutator
+### Mutator
 1. Description:\
    This object will handle the actual mutation process for an input according to\
    the chosen mutation algorithm.
@@ -125,7 +125,7 @@ type mutator struct {
    mp           *mutationPool
 }
 ```
-###MutationPool ✅
+### MutationPool ✅
 1. Description:\
    This object will handle the storage of the mutated seeds, and ranking the mutated seeds\
    according to specified ranking algorithm.
@@ -151,7 +151,7 @@ type mutationPool struct {
 	storageList []string // a list of stored mutated seeds
 }
 ```
-###Connector ✅
+### Connector ✅
 1. Description:\
    This object will handle the connection between the mutator and AFL++, it will fetch\
    some amount of seeds (configurable) from the mutated seed pool, and put them\
@@ -171,5 +171,13 @@ type connector struct {
 }
 ```
 
-###Current Testing
-mutator.go -> mutationPhase1() -> buildPayload()
+### Current Testing
+mutator.go -> mutationPhase1() -> writeMutatedSeed()
+
+### Need changing
+
+Another thing to notice is, when doing mutation after we have a score board, we should not completely
+ignore the seeds that couldn't pass the check, we should however, continue mutating on them and monitor
+the results and record that results into the score board as a guide.
+
+mutator.go -> positionMutate()
