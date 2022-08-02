@@ -172,7 +172,7 @@ type connector struct {
 ```
 
 ### Current Testing
-mutator.go -> mutationPhase1() -> writeMutatedSeed()
+mutator.go -> mutationPhase1() -> calculateRelative()
 
 ### Need changing
 

@@ -110,3 +110,10 @@ func TestValidityCheck(t *testing.T) {
 
 	fmt.Println("\nEnd testing... validityCheck()")
 }
+
+func TestWriteMutatedSeed(t *testing.T) {
+	fmt.Println("\nStart testing... writeMutatedSeed()")
+	myMutator := Init("testWriteMutatedSeed()", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+	myMutator.writeMutatedSeed("<test>I'm the test seed for phase one</test>", "phaseOne")
+	myMutator.writeMutatedSeed("<test>I'm the test seed for phase two</test>", "phaseTwo")
+}
