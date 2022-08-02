@@ -116,4 +116,21 @@ func TestWriteMutatedSeed(t *testing.T) {
 	myMutator := Init("testWriteMutatedSeed()", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
 	myMutator.writeMutatedSeed("<test>I'm the test seed for phase one</test>", "phaseOne")
 	myMutator.writeMutatedSeed("<test>I'm the test seed for phase two</test>", "phaseTwo")
+
+	fmt.Println("\nEnd testing... writeMutatedSeed()")
+}
+
+func TestCalculateRelative(t *testing.T) {
+	fmt.Println("\nStart testing... calculateRelative()")
+	myMutator := Init("testWriteMutatedSeed()", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+
+	payloadPosition := position{
+		depth:          3,
+		width:          4,
+		insertionPoint: 0,
+	}
+	result := myMutator.calculateRelative(position{}, payloadPosition)
+	fmt.Println("Result is: ", result)
+
+	fmt.Println("\nEnd testing... calculateRelative()")
 }

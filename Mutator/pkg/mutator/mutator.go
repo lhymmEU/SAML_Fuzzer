@@ -191,6 +191,8 @@ type position struct {
 }
 
 type relativePosition struct {
+	x int
+	y int
 }
 
 // This type is used to store the result from a hot run
@@ -594,9 +596,13 @@ func (m *positionMutator) validityCheck(mutatedSeed string, strictLevel int) boo
 	return true
 }
 
-func (m *positionMutator) calculateRelative(scP position, pP position) relativePosition {
+/*
+	This func will return the relative position between the payload and the original signed element.
+*/
 
-	return relativePosition{}
+func (m *positionMutator) calculateRelative(scP position, payload position) relativePosition {
+
+	return relativePosition{payload.depth, payload.width}
 }
 
 func (m *positionMutator) writeScoreBoard(relativeP interface{}, result interface{}, phase string) {
