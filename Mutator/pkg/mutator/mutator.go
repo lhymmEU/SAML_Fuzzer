@@ -41,6 +41,7 @@ type positionMutator struct {
 	mp              *mutationPool
 	positionMap     []position
 	scoreBoardReady bool
+	board           scoreBoard
 }
 
 func Init(name string, configPath string, configName string) *positionMutator {
@@ -59,6 +60,7 @@ func Init(name string, configPath string, configName string) *positionMutator {
 				name:   name,
 				config: &config.Configs[i],
 				mp:     new(mutationPool),
+				board:  make(scoreBoard),
 			}
 		}
 	}
@@ -179,7 +181,15 @@ const XmlSecToolPath = "/Users/lhymm/SAML_Fuzzer/preFilterTools/xmlsectool"
 const PhaseOneDir = "../../seeds/phaseOne"
 const PhaseTwoDir = "../../seeds/phaseTwo"
 
-type scoreBoard struct {
+type metrics struct {
+	pass int
+	fail int
+}
+
+type scoreBoard map[relativePosition]metrics
+
+func (b scoreBoard) newBoard() scoreBoard {
+	return make(map[relativePosition]metrics)
 }
 
 type statisticalResults struct {
@@ -193,11 +203,6 @@ type position struct {
 type relativePosition struct {
 	x int
 	y int
-}
-
-// This type is used to store the result from a hot run
-
-type hotResult struct {
 }
 
 func (m *positionMutator) positionMutation() error {
@@ -278,8 +283,8 @@ func (m *positionMutator) mutationPhase2(seeds []string) error {
 	for _, seed := range seeds {
 		mutatedSeed := m.randomMutate(seed)
 		validityResult := m.validityCheck(mutatedSeed, 0)
-		hotR := m.deliverToTarget(seed, mutatedSeed)
-		m.writeScoreBoard(hotR, validityResult, "phaseTwo")
+		relativeP := m.deliverToTarget(seed, mutatedSeed)
+		m.writeScoreBoard(relativeP, validityResult, "phaseTwo")
 		m.writeMutatedSeed(mutatedSeed, "phaseTwo")
 	}
 
@@ -605,10 +610,65 @@ func (m *positionMutator) calculateRelative(scP position, payload position) rela
 	return relativePosition{payload.depth, payload.width}
 }
 
-func (m *positionMutator) writeScoreBoard(relativeP interface{}, result interface{}, phase string) {
+/*
+	This function should work as follows:
+		1. it first checks if there is an existing score board
+		2. if not, first create an empty one, change m.scoreBoardReady to true
+		3. then, write relevant information into it
+		4. if the writing process failed, change m.scoreBoardReady to false
+	TODO: Need to change the read/write operations to MySQL database !!! (right now everything is in memory)
+	TODO: Need to address the code-reuse problem within this function
+*/
 
-	// Should change m.scoreBoardReady to true after creating a score board
-
+func (m *positionMutator) writeScoreBoard(relativeP relativePosition, result bool, phase string) {
+	if !m.scoreBoardReady {
+		// create and write new score board
+		board := make(scoreBoard)
+		//board = board.newBoard()
+		if result {
+			board[relativeP] = metrics{
+				pass: 1,
+				fail: 0,
+			}
+		} else {
+			board[relativeP] = metrics{
+				pass: 0,
+				fail: 1,
+			}
+		}
+		m.board = board
+		m.scoreBoardReady = true
+		fmt.Println("The newly created score board is: ", m.board)
+	} else {
+		// add to existing score board
+		v, ok := m.board[relativeP]
+		if !ok {
+			if result {
+				m.board[relativeP] = metrics{
+					pass: 1,
+					fail: 0,
+				}
+			} else {
+				m.board[relativeP] = metrics{
+					pass: 0,
+					fail: 1,
+				}
+			}
+		} else {
+			if result {
+				m.board[relativeP] = metrics{
+					pass: v.pass + 1,
+					fail: v.fail,
+				}
+			} else {
+				m.board[relativeP] = metrics{
+					pass: v.pass,
+					fail: v.fail + 1,
+				}
+			}
+		}
+		fmt.Println("The existing score board is: ", m.board)
+	}
 }
 
 /*
@@ -634,14 +694,15 @@ func (m *positionMutator) writeMutatedSeed(mutatedSeed string, phase string) str
 	return path
 }
 
+// TODO: consider whether this function should be implemented by ourself, or simply using AFL++ is enough
 func (m *positionMutator) randomMutate(seed string) string {
 
-	return ""
+	return seed
 }
 
-func (m *positionMutator) deliverToTarget(originalSeed string, mutatedSeed string) hotResult {
+func (m *positionMutator) deliverToTarget(originalSeed string, mutatedSeed string) relativePosition {
 
-	return hotResult{}
+	return relativePosition{}
 }
 
 /*

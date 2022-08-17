@@ -134,3 +134,21 @@ func TestCalculateRelative(t *testing.T) {
 
 	fmt.Println("\nEnd testing... calculateRelative()")
 }
+
+func TestWriteScoreBoard(t *testing.T) {
+	fmt.Println("\nStart testing... writeScoreBoard()")
+	myMutator := Init("testWriteScoreBoard()", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+
+	rp := relativePosition{
+		x: 1,
+		y: 2,
+	}
+	rp2 := relativePosition{
+		x: 2,
+		y: 3,
+	}
+	myMutator.writeScoreBoard(rp, true, "")
+	myMutator.writeScoreBoard(rp, false, "")
+	myMutator.writeScoreBoard(rp2, false, "")
+	myMutator.writeScoreBoard(rp2, false, "")
+}
