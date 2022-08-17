@@ -2,12 +2,12 @@ package helpers
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
-
 
 func WriteStringToFile(s string, path string) bool {
 	f, err := os.Create(path)
@@ -29,7 +29,7 @@ func WriteStringToFile(s string, path string) bool {
 }
 
 func AppendToFile(s string, path string) bool {
-	f, err := os.OpenFile(path, os.O_APPEND | os.O_WRONLY | os.O_CREATE, 0666)
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Printf("Open file %s failed: %s", s, err)
 		return false
@@ -68,7 +68,7 @@ func GenErrorHandler() {
 		1. Go through the terminals slice.
 		2. if the terminal
 		3. Add a white space " " in front of the index.
- */
+*/
 
 func TerminalsRefactor(terminals []string) []string {
 
@@ -101,7 +101,6 @@ func BuildXMLString(leaves []string) string {
 
 	xmlString := strings.Join(leaves, "")
 
-
 	return xmlString
 }
 
@@ -124,4 +123,12 @@ func ReadFileFromDir(dirName string, walkFn filepath.WalkFunc) error {
 	} else {
 		return nil
 	}
+}
+
+func WriteJsonToFile(path string, jsonStr []byte) {
+	file, _ := os.OpenFile(path, os.O_CREATE, os.ModePerm)
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.Encode(jsonStr)
 }

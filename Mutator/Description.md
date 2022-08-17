@@ -172,8 +172,7 @@ type connector struct {
 ```
 
 ### Current Testing
-mutator.go -> mutationPhase1() -> writeSoreBoard()
-
+mutator.go -> mutationPhase1() -> randomMutate()
 ### Need changing
 
 Another thing to notice is, when doing mutation after we have a score board, we should not completely
