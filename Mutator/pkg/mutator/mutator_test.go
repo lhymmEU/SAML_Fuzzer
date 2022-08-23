@@ -46,8 +46,10 @@ func TestIdentifyPositions(t *testing.T) {
 	myMutator := Init("testIdentifyPositions", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
 	myParser := parser.NewAntlrParser("testIdentifyPositions")
 	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
+	fullProtected, _, _ := myMutator.extractProtected(myParser.Listener.SubTrees)
+	fmt.Println("The fully protected part is: ", fullProtected)
 
-	positions := myMutator.identifyPositions(myParser.Listener)
+	positions := myMutator.identifyPositions(myParser.Listener, fullProtected)
 	fmt.Println("terminals are: ", myParser.Listener.Terminals)
 	fmt.Println("positions are: ", positions)
 
@@ -61,7 +63,7 @@ func TestExtractProtected(t *testing.T) {
 	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
 
 	fmt.Println("Subtrees are: ", myParser.Listener.SubTrees)
-	result, protectedID := myMutator.extractProtected(myParser.Listener.SubTrees)
+	_, result, protectedID := myMutator.extractProtected(myParser.Listener.SubTrees)
 	fmt.Println("The extracted part is: ", result)
 	fmt.Println("The protected id is: ", protectedID)
 
@@ -89,11 +91,13 @@ func TestPositionMutate(t *testing.T) {
 	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
 
 	payload := "<nameID=\"attack\"><justFun/>This is initial doc 1</name>"
+	fullProtected, _, _ := myMutator.extractProtected(myParser.Listener.SubTrees)
 
-	myMutator.positionMap = myMutator.identifyPositions(myParser.Listener)
-	result, payloadPosition := myMutator.positionMutate(payload, myParser.Listener)
+	myMutator.positionMap = myMutator.identifyPositions(myParser.Listener, fullProtected)
+	result, payloadPosition, protectedPosition := myMutator.positionMutate(payload, fullProtected, myParser.Listener)
 	fmt.Println("Mutation result is: ", result)
 	fmt.Println("The position of payload is: ", payloadPosition)
+	fmt.Println("The protected part is: ", protectedPosition)
 
 	fmt.Println("\nEnd testing... positionMutate()")
 }
@@ -151,4 +155,27 @@ func TestWriteScoreBoard(t *testing.T) {
 	myMutator.writeScoreBoard(rp, false, "")
 	myMutator.writeScoreBoard(rp2, false, "")
 	myMutator.writeScoreBoard(rp2, false, "")
+
+	fmt.Println("\nEnd testing... writeScoreBoard()")
+}
+
+func TestAnalyzeScoreBoard(t *testing.T) {
+	fmt.Println("\nStart testing... analyzeScoreBoard()")
+	myMutator := Init("testWriteScoreBoard()", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
+
+	rp := relativePosition{
+		x: 1,
+		y: 2,
+	}
+	rp2 := relativePosition{
+		x: 2,
+		y: 3,
+	}
+	myMutator.writeScoreBoard(rp, true, "")
+	myMutator.writeScoreBoard(rp, false, "")
+	myMutator.writeScoreBoard(rp2, false, "")
+	myMutator.writeScoreBoard(rp2, false, "")
+
+	fmt.Println("The result is: ", myMutator.analyzeScoreBoard(myMutator.board))
+	fmt.Println("\nEnd testing... analyzeScoreBoard()")
 }
