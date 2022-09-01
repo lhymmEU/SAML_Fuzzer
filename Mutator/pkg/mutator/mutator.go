@@ -383,7 +383,7 @@ func (m *positionMutator) extractProtected(subTrees []string) (string, string, s
 
 	// Step 2
 	// TODO: now this extraction mechanism assumes too much of the target file, need to relax the assumption in the next version.
-	startIndex := 18 // the length of '<ds:ReferenceURI="'
+	startIndex := 19 // the length of '<ds:ReferenceURI="#'
 	endIndex := -1
 	for i, c := range protected {
 		if string(c) == ">" {
@@ -396,6 +396,8 @@ func (m *positionMutator) extractProtected(subTrees []string) (string, string, s
 	// TODO: now this part of code assumes the protected content always has an attribute in the form of 'ID="protected"', need to relax this assumption
 	protectedID := "ID=\"" + protected[startIndex:endIndex+1] + "\""
 	protectedTree, _ := regexp.Compile(protectedID)
+	// we need to return the first found result, due to the DFS search of Antlr4
+	// the assumption here is the ds:signature element will use "#" + ref_id, so the smallest subtree contains a ref_id will be the protected part
 	for i, v := range subTrees {
 		if protectedTree.MatchString(v) {
 			protected = subTrees[i]
@@ -407,6 +409,7 @@ func (m *positionMutator) extractProtected(subTrees []string) (string, string, s
 	fullProtected := protected
 
 	// Step 4
+	// TODO: not sure if it is necessary to exclude the ds:signature element
 	signatureTree, _ := regexp.Compile(DsTag)
 	for i, v := range subTrees {
 		if signatureTree.MatchString(v) {
@@ -468,7 +471,7 @@ func (m *positionMutator) identifyPositions(ml *parser.MyListener, fullProtected
 		start := strings.Index(terminals, protected)
 		end := start + len(protected)
 		fmt.Println("Start and end are: ", start, end)*/
-
+	var seenElement []string
 	for i, v := range terminals {
 		// the two ifs bellow is designed to deal with the issue mentioned in the "notice" above
 		/*if i >= start && i < end {
@@ -484,11 +487,14 @@ func (m *positionMutator) identifyPositions(ml *parser.MyListener, fullProtected
 			continue
 		}*/
 
+		seenElement = append(seenElement, string(v))
 		switch string(v) {
 		case "<":
-			fallthrough
-		case "/":
 			memory = append(memory, string(v))
+		case "/":
+			if seenElement[i-1] == "<" {
+				memory = append(memory, string(v))
+			}
 		case ">":
 			if strings.Join(memory, "") == "<" {
 				depth++

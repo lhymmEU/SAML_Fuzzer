@@ -22,7 +22,7 @@ func TestNewAntlrParser(t *testing.T) {
 func TestParse(t *testing.T) {
 	fmt.Println("\nStart testing... Parser()")
 	testParser := NewAntlrParser("testParser")
-	testParser.Parse("../../seeds/initial/initial.xml")
+	testParser.Parse("../../seeds/testing/special_test.xml")
 	fmt.Println("After parsing, the listener stores following values: ")
 	fmt.Println("The strategy is: ", testParser.Listener.strategy)
 	fmt.Println("The sub-trees are: ", testParser.Listener.SubTrees)

@@ -88,16 +88,16 @@ func TestPositionMutate(t *testing.T) {
 	fmt.Println("\nStart testing... positionMutate()")
 	myMutator := Init("testPositionMutate", "/Users/lhymm/SAML_Fuzzer/Mutator/config/mutationConfig.json", "myPositionConfig")
 	myParser := parser.NewAntlrParser("testIdentifyPositions")
-	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/test.xml")
+	myParser.Parse("/Users/lhymm/SAML_Fuzzer/Mutator/seeds/testing/special_test.xml")
 
-	payload := "<nameID=\"attack\"><justFun/>This is initial doc 1</name>"
-	fullProtected, _, _ := myMutator.extractProtected(myParser.Listener.SubTrees)
-
+	fullProtected, protected, protectedID := myMutator.extractProtected(myParser.Listener.SubTrees)
+	payload := myMutator.buildPayload(protected, protectedID)
 	myMutator.positionMap = myMutator.identifyPositions(myParser.Listener, fullProtected)
 	result, payloadPosition, protectedPosition := myMutator.positionMutate(payload, fullProtected, myParser.Listener)
 	fmt.Println("Mutation result is: ", result)
 	fmt.Println("The position of payload is: ", payloadPosition)
 	fmt.Println("The protected part is: ", protectedPosition)
+	fmt.Println("Position map is: ", myMutator.positionMap)
 
 	fmt.Println("\nEnd testing... positionMutate()")
 }

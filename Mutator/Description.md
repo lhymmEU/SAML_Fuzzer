@@ -172,30 +172,21 @@ type connector struct {
 ```
 
 ### Current Testing
-mutator.go -> mutationPhase1() -> positionMutate()
 
-extractProtected() -> this function should return the range of the protected part for positionMutate() to use.
-
-the problem right now is: after identifying potential positions, there are some positions which are inside the protected
-part, which will be destroyed if the protected part moves to other positions. So -> we need to distinguish a payload within
-and outside the original protected part.
-
-impl the logic that insert a payload according to scoreboard
-
-The problem-solving procedure should be:
-   1. change the struct of "position" ✅
-   2. return the full protected part from extractProtected(), move the function before identifyPositions() ✅
-   3. add within/outside information to the "position" struct within identifyPositions() ✅
-   4. within positionMutate(), based-on the within/outside information, execute different mutation logic.
+1. The correctness of the output of the positionMutate()
+2. The entire logic correctness surround relative position (data structure, create, update, read, write)
+   1) type scoreBoard
+   2) type relativePosition
+   3) type statisticalResults
+   4) newBoard()
+   5) readScoreBoard()
+   6) analyzeScoreBoard()
+   7) writeAnalysis()
+   8) scheduleSeeds()
+   9) calRelativePosition()
 
 ### Need changing
 
 Another thing to notice is, when doing mutation after we have a score board, we should not completely
 ignore the seeds that couldn't pass the check, we should however, continue mutating on them and monitor
 the results and record that results into the score board as a guide.
-
-mutator.go -> positionMutate()
-
-calRelativePosition() should be changed
-
-identifyPosition() -> need a thorough check of the logic
